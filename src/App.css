@@ -1,6 +1,33 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.memory__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, auto);
+}
+
+.memory__card {
+  border: 1px solid;
+  height: 100px;
+  width: 150px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #222;
+  border: 3px solid transparent;
+}
+
+.memory__card.guessed {
+  border: 3px solid green;
+}
+
+.memory__card__img {
+  height: 100%;
+  width: 100%;
 }

@@ -27,6 +27,16 @@ function App() {
   const totalAmountCards = useRef<number>(16);
   const [images, setImages] = useState<string[]>([]);
 
+  //Map<cardId, setId>
+  const [selectedCards, setSelectedCards] = useState<Map<string, string>>(
+    new Map()
+  );
+
+  //Map<setId, [firstImageId, secondImageId]>
+  const [guessedPair, setGuessedPair] = useState<Map<string, string[]>>(
+    new Map()
+  );
+
   useEffect(() => {
     //TODO: move API endpoint to env variable and constant as fallback
     const apiEndpoint = 'https://dog.ceo/api/breeds/image/random';
@@ -77,19 +87,70 @@ function App() {
     return shuffleArr([...updatedData, ...updatedData]);
   }, [images]);
 
-  /* if the current card is amongst the one clicked then
-  set that to "selected" */
+  const handleCardClick = ({
+    cardId,
+    cardSetId,
+  }: {
+    cardId: string;
+    cardSetId: string;
+  }) => {
+    setSelectedCards((prevSelectedCards) => {
+      const updated = new Map(prevSelectedCards);
+      updated.set(cardId, cardSetId);
 
-  //Map<cardId, setId>
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    if (selectedCards.size <= 1) return;
+
+    const [[firstImageId, firstImageSetId], [secondImageId, secondImageSetId]] =
+      selectedCards;
+
+    //* wait 1/2 seconds
+    const timeout = setTimeout(() => {
+      //* if they belong to the same set then add them amongs the
+      if (firstImageSetId === secondImageSetId) {
+        setGuessedPair((prevGuessedPair) => {
+          const updated = new Map(prevGuessedPair);
+          updated.set(firstImageSetId, [firstImageId, secondImageId]);
+
+          return updated;
+        });
+      }
+
+      //* reset previously selected cards
+      setSelectedCards(new Map());
+    }, 1500);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [selectedCards]);
 
   return (
     <div className='App'>
       <div className='wrapper'>
         <div className='memory__grid'>
           {memoryCardsData.map(({ imageSrc, setId }, index: number) => {
+            const isCardSelected: boolean = selectedCards.has(index.toString());
+            const isCardBeenGuessed: boolean = guessedPair.has(setId);
+
             return (
-              <div key={`card-${index}-${setId}`} className='memory__card'>
-                <img src={imageSrc} alt='' className='memory__card__img' />
+              <div
+                key={`card-${index}-${setId}`}
+                className={`memory__card ${isCardBeenGuessed ? 'guessed' : ''}`}
+                onClick={() =>
+                  handleCardClick({
+                    cardId: index.toString(),
+                    cardSetId: setId,
+                  })
+                }
+              >
+                {isCardSelected && (
+                  <img src={imageSrc} alt='' className='memory__card__img' />
+                )}
               </div>
             );
           })}
