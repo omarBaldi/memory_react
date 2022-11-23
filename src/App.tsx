@@ -52,7 +52,7 @@ function App() {
         []
       );
 
-      for (const card of memoryCardsElement) {
+      for (const card of shuffleArr(memoryCardsElement)) {
         el.appendChild(card);
       }
     }
