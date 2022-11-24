@@ -2,21 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as v4Id } from 'uuid';
 import './App.css';
 import { MemoryCard } from './components/memory-card';
+import { BASE_API_URL, DEFAULT_NUMBER_CARDS } from './constant';
+import { getEnvVariable } from './utils/get-env-variable';
 import { shuffleArr } from './utils/shuffle-arr';
-
-/**
- *
- * * The total number of cards has to be an EVEN number
- * * as every card is associated to another one. (set of 2 cards)
- *
- * * As soon as a card is clicked I need to reveal on the web view
- * * As soon as the second card is clicked, follow the step described
- * * in the line above and:
- * * - check if the 2 cards belong to the same pair
- * *  - if that's the case, store the selected cards
- * * - wait 1/2 seconds
- * * - reset the cards clicked
- */
 
 type ApiResponseType = {
   message: string;
@@ -24,8 +12,7 @@ type ApiResponseType = {
 };
 
 function App() {
-  //TODO: move magic number to descriptive constant variable
-  const totalAmountCards = useRef<number>(16);
+  const totalAmountCards = useRef<number>(DEFAULT_NUMBER_CARDS);
   const [images, setImages] = useState<string[]>([]);
 
   const [selectedCards, setSelectedCards] = useState<Map<string, string>>(
@@ -37,8 +24,9 @@ function App() {
   >(new Map());
 
   useEffect(() => {
-    //TODO: move API endpoint to env variable and constant as fallback
-    const apiEndpoint = 'https://dog.ceo/api/breeds/image/random';
+    const apiBaseUrl = getEnvVariable({ name: 'API_BASE_URL' }) ?? BASE_API_URL;
+    const apiEndpoint = `${apiBaseUrl}/breeds/image/random`;
+
     const length = totalAmountCards.current / 2;
     const endpoints = [...Array(length)].fill(apiEndpoint);
 
