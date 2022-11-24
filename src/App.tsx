@@ -27,15 +27,13 @@ function App() {
   const totalAmountCards = useRef<number>(16);
   const [images, setImages] = useState<string[]>([]);
 
-  //Map<cardId, setId>
   const [selectedCards, setSelectedCards] = useState<Map<string, string>>(
     new Map()
   );
 
-  //Map<setId, [firstImageId, secondImageId]>
-  const [guessedPair, setGuessedPair] = useState<Map<string, string[]>>(
-    new Map()
-  );
+  const [guessedPair, setGuessedPair] = useState<
+    Map<string, { pair: string[] }>
+  >(new Map());
 
   useEffect(() => {
     //TODO: move API endpoint to env variable and constant as fallback
@@ -108,13 +106,17 @@ function App() {
     const [[firstImageId, firstImageSetId], [secondImageId, secondImageSetId]] =
       selectedCards;
 
+    //TODO: create custom hook useTimeout with custom dependencies [...deps]
     //* wait 1/2 seconds
     const timeout = setTimeout(() => {
       //* if they belong to the same set then add them amongs the
       if (firstImageSetId === secondImageSetId) {
-        setGuessedPair((prevGuessedPair) => {
-          const updated = new Map(prevGuessedPair);
-          updated.set(firstImageSetId, [firstImageId, secondImageId]);
+        setGuessedPair((prev) => {
+          const updated = new Map(prev);
+
+          updated.set(firstImageSetId.toString(), {
+            pair: [firstImageId, secondImageId],
+          });
 
           return updated;
         });
@@ -129,32 +131,45 @@ function App() {
     };
   }, [selectedCards]);
 
+  const gameFinished: boolean =
+    guessedPair.size === totalAmountCards.current / 2;
+
   return (
     <div className='App'>
       <div className='wrapper'>
-        <div className='memory__grid'>
-          {memoryCardsData.map(({ imageSrc, setId }, index: number) => {
-            const isCardSelected: boolean = selectedCards.has(index.toString());
-            const isCardBeenGuessed: boolean = guessedPair.has(setId);
+        {gameFinished ? (
+          <h1>Game finished!</h1>
+        ) : (
+          <div className='memory__grid'>
+            {memoryCardsData.map(({ imageSrc, setId }, index: number) => {
+              const isCardSelected: boolean = selectedCards.has(
+                index.toString()
+              );
+              const isCardBeenGuessed: boolean = guessedPair.has(setId);
 
-            return (
-              <div
-                key={`card-${index}-${setId}`}
-                className={`memory__card ${isCardBeenGuessed ? 'guessed' : ''}`}
-                onClick={() =>
-                  handleCardClick({
-                    cardId: index.toString(),
-                    cardSetId: setId,
-                  })
-                }
-              >
-                {isCardSelected && (
-                  <img src={imageSrc} alt='' className='memory__card__img' />
-                )}
-              </div>
-            );
-          })}
-        </div>
+              return (
+                <div
+                  key={`card-${index}-${setId}`}
+                  className={`memory__card ${
+                    isCardBeenGuessed ? 'guessed' : ''
+                  }`}
+                  onClick={() =>
+                    selectedCards.size === 2 || isCardBeenGuessed
+                      ? undefined
+                      : handleCardClick({
+                          cardId: index.toString(),
+                          cardSetId: setId,
+                        })
+                  }
+                >
+                  {isCardSelected && (
+                    <img src={imageSrc} alt='' className='memory__card__img' />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
