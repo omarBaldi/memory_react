@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as v4Id } from 'uuid';
 import './App.css';
+import { MemoryCard } from './components/memory-card';
 import { shuffleArr } from './utils/shuffle-arr';
 
 /**
@@ -85,20 +86,19 @@ function App() {
     return shuffleArr([...updatedData, ...updatedData]);
   }, [images]);
 
-  const handleCardClick = ({
-    cardId,
-    cardSetId,
-  }: {
-    cardId: string;
-    cardSetId: string;
-  }) => {
-    setSelectedCards((prevSelectedCards) => {
-      const updated = new Map(prevSelectedCards);
-      updated.set(cardId, cardSetId);
+  const handleCardClick = useCallback(
+    ({ cardId, cardSetId }: { cardId: string; cardSetId: string }) => {
+      if (selectedCards.size === 2) return;
 
-      return updated;
-    });
-  };
+      setSelectedCards((prevSelectedCards) => {
+        const updated = new Map(prevSelectedCards);
+        updated.set(cardId, cardSetId);
+
+        return updated;
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     if (selectedCards.size <= 1) return;
@@ -141,33 +141,16 @@ function App() {
           <h1>Game finished!</h1>
         ) : (
           <div className='memory__grid'>
-            {memoryCardsData.map(({ imageSrc, setId }, index: number) => {
-              const isCardSelected: boolean = selectedCards.has(
-                index.toString()
-              );
-              const isCardBeenGuessed: boolean = guessedPair.has(setId);
-
-              return (
-                <div
-                  key={`card-${index}-${setId}`}
-                  className={`memory__card ${
-                    isCardBeenGuessed ? 'guessed' : ''
-                  }`}
-                  onClick={() =>
-                    selectedCards.size === 2 || isCardBeenGuessed
-                      ? undefined
-                      : handleCardClick({
-                          cardId: index.toString(),
-                          cardSetId: setId,
-                        })
-                  }
-                >
-                  {isCardSelected && (
-                    <img src={imageSrc} alt='' className='memory__card__img' />
-                  )}
-                </div>
-              );
-            })}
+            {memoryCardsData.map((cardData, index: number) => (
+              <MemoryCard
+                key={`card-${index}-${cardData.setId}`}
+                {...cardData}
+                id={index.toString()}
+                isCardSelected={selectedCards.has(index.toString())}
+                hasBeenGuessed={guessedPair.has(cardData.setId)}
+                handleCardClick={handleCardClick}
+              />
+            ))}
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import React, { FC } from 'react';
 import MemoryCardProps from './dto';
 
 const MemoryCard: FC<MemoryCardProps> = ({
@@ -28,4 +28,4 @@ const MemoryCard: FC<MemoryCardProps> = ({
   );
 };
 
-export default MemoryCard;
+export default React.memo(MemoryCard);
