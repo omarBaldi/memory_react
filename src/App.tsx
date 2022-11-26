@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as v4Id } from 'uuid';
-import './App.css';
-import { MemoryCard } from './components/memory-card';
-import { BASE_API_URL, DEFAULT_NUMBER_CARDS } from './constant';
+import { useDebounce } from './hooks/useDebouce';
 import { getEnvVariable } from './utils/get-env-variable';
 import { shuffleArr } from './utils/shuffle-arr';
+import { MemoryCard } from './components/memory-card';
+import { BASE_API_URL, DEFAULT_NUMBER_CARDS } from './constant';
+import './App.css';
 
 type ApiResponseType = {
   message: string;
@@ -88,36 +89,37 @@ function App() {
     []
   );
 
+  /**
+   * @desc
+   * TODO: add description here
+   */
+  const debouncedSelectedCards = useDebounce({
+    ms: 1500,
+    value: selectedCards,
+  });
+
   useEffect(() => {
-    if (selectedCards.size <= 1) return;
+    if (debouncedSelectedCards.size <= 1) return;
 
     const [[firstImageId, firstImageSetId], [secondImageId, secondImageSetId]] =
       selectedCards;
 
-    //TODO: create custom hook useTimeout with custom dependencies [...deps]
-    //* wait 1/2 seconds
-    const timeout = setTimeout(() => {
-      //* if they belong to the same set then add them amongs the
-      if (firstImageSetId === secondImageSetId) {
-        setGuessedPair((prev) => {
-          const updated = new Map(prev);
+    //* if they belong to the same set then add them amongs the
+    if (firstImageSetId === secondImageSetId) {
+      setGuessedPair((prev) => {
+        const updated = new Map(prev);
 
-          updated.set(firstImageSetId.toString(), {
-            pair: [firstImageId, secondImageId],
-          });
-
-          return updated;
+        updated.set(firstImageSetId.toString(), {
+          pair: [firstImageId, secondImageId],
         });
-      }
 
-      //* reset previously selected cards
-      setSelectedCards(new Map());
-    }, 1500);
+        return updated;
+      });
+    }
 
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [selectedCards]);
+    //* reset previously selected cards
+    setSelectedCards(new Map());
+  }, [debouncedSelectedCards]);
 
   const gameFinished: boolean =
     guessedPair.size === totalAmountCards.current / 2;
