@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as v4Id } from 'uuid';
-import { useDebounce } from './hooks/useDebouce';
-import { getEnvVariable } from './utils/get-env-variable';
+import { getRandomImages } from './api/get-random-images';
 import { shuffleArr } from './utils/shuffle-arr';
+import { getFulfilledPromises } from './utils/get-fulfilled-promises';
+import { useDebounce } from './hooks/useDebounce';
 import { MemoryCard } from './components/memory-card';
-import { BASE_API_URL, DEFAULT_NUMBER_CARDS } from './constant';
+import { DEFAULT_NUMBER_CARDS } from './constant';
 import './App.css';
-
-type ApiResponseType = {
-  message: string;
-  status: string;
-};
 
 function App() {
   const totalAmountCards = useRef<number>(DEFAULT_NUMBER_CARDS);
@@ -25,33 +21,16 @@ function App() {
   >(new Map());
 
   useEffect(() => {
-    const apiBaseUrl = getEnvVariable({ name: 'API_BASE_URL' }) ?? BASE_API_URL;
-    const apiEndpoint = `${apiBaseUrl}/breeds/image/random`;
-
     const length = totalAmountCards.current / 2;
-    const endpoints = [...Array(length)].fill(apiEndpoint);
-
     const controller = new AbortController();
 
-    const getRandomImages = async (): Promise<string[]> => {
-      const promisesSettledResult = await Promise.allSettled(
-        endpoints.map((endpoint) =>
-          fetch(endpoint, { method: 'GET', signal: controller.signal }).then(
-            (res) => res.json()
-          )
-        )
-      );
+    const promises = [...Array(length)].map(() =>
+      getRandomImages({ controller })
+    );
 
-      const randomImages = promisesSettledResult
-        .filter(({ status }) => status === 'fulfilled')
-        .map(
-          (p) => (p as PromiseFulfilledResult<ApiResponseType>).value.message
-        );
-
-      return randomImages;
-    };
-
-    getRandomImages().then(setImages);
+    getFulfilledPromises({ promises })
+      .then((p) => p.map(({ message: imageSource }) => imageSource))
+      .then(setImages);
 
     return () => {
       controller.abort();
@@ -89,17 +68,13 @@ function App() {
     []
   );
 
-  /**
-   * @desc
-   * TODO: add description here
-   */
-  const debouncedSelectedCards = useDebounce({
+  const updatedSelectedCards = useDebounce({
     ms: 1500,
     value: selectedCards,
   });
 
   useEffect(() => {
-    if (debouncedSelectedCards.size <= 1) return;
+    if (updatedSelectedCards.size <= 1) return;
 
     const [[firstImageId, firstImageSetId], [secondImageId, secondImageSetId]] =
       selectedCards;
@@ -119,7 +94,7 @@ function App() {
 
     //* reset previously selected cards
     setSelectedCards(new Map());
-  }, [debouncedSelectedCards]);
+  }, [updatedSelectedCards]);
 
   const gameFinished: boolean =
     guessedPair.size === totalAmountCards.current / 2;
